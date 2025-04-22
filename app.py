@@ -22,7 +22,7 @@ app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
 
 # --- Session Config ---
-app.config["SESSION_TYPE"] = "filesystem"
+app.config["SESSION_TYPE"] = "null"
 app.config["SESSION_FILE_DIR"] = "./flask_session_dir"
 app.config["SESSION_PERMANENT"] = False
 Session(app)
@@ -145,36 +145,42 @@ def agent_router(text="", image_bytes=None, user_location=None):
 # --- Chat Endpoint ---
 @app.route("/chat", methods=["POST"])
 def chat():
-    text = request.form.get("text", "")
-    user_location = request.form.get("location")
-    image_file = request.files.get("image")
+   try:
+       text = request.form.get("text", "")
+       user_location = request.form.get("location")
+       image_file = request.files.get("image")
 
-    if not user_location:
-        user_location = session.get("location")
-    if not user_location and text:
-        extracted = extract_location(text)
-        if extracted:
-            user_location = extracted
-            session["location"] = user_location
-    elif user_location:
-        session["location"] = user_location
+       if not user_location:
+           user_location = session.get("location")
+       if not user_location and text:
+           extracted = extract_location(text)
+           if extracted:
+               user_location = extracted
+               session["location"] = user_location
+       elif user_location:
+           session["location"] = user_location
 
-    if image_file:
-        image_bytes = image_file.read()
-        session["last_image"] = image_bytes
-    else:
-        image_bytes = session.get("last_image")
+       if image_file:
+           image_bytes = image_file.read()
+           session["last_image"] = image_bytes
+       else:
+           image_bytes = session.get("last_image")
 
-    reply = agent_router(text, image_bytes, user_location)
-    return jsonify({"reply": reply})
+       reply = agent_router(text, image_bytes, user_location)
+       return jsonify({"reply": reply})
+   except(Exception):
+       print(Exception)
 
 # --- Reset ---
 @app.route("/reset", methods=["POST"])
 def reset():
-    global  History
-    History = []
-    session.clear()
-    return jsonify({"status": "Session cleared."})
+    try:
+        global History
+        History = []
+        session.clear()
+        return jsonify({"status": "Session cleared."})
+    except(Exception):
+        print(Exception)
 
 # --- Run ---
 if __name__ == "__main__":
